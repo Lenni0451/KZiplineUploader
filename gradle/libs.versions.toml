@@ -1,16 +1,19 @@
 [versions]
+dbusJava = "5.2.0"
 
 [libraries]
 findbugs = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
 jetbrainsAnnotations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 lombok = { module = "org.projectlombok:lombok", version = "1.18.44" }
+slf4jSimple = { module = "org.slf4j:slf4j-simple", version = "2.0.17" }
+orgJson = { module = "org.json:json", version = "20251224" }
 
-junit-bom = { module = "org.junit:junit-bom", version = "6.0.3" }
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+commons-httpclient = { module = "net.lenni0451.commons:httpclient", version = "1.9.2" }
+
+dbus-java-core = { module = "com.github.hypfvieh:dbus-java-core", version.ref = "dbusJava" }
+dbus-java-transport-native-unixsocket = { module = "com.github.hypfvieh:dbus-java-transport-native-unixsocket", version.ref = "dbusJava" }
 
 [bundles]
+dbusJava = ["dbus-java-core", "dbus-java-transport-native-unixsocket"]
 
 [plugins]
-classTokenReplacer = { id = "net.raphimc.class-token-replacer", version = "1.1.7" }
-templateProcessor = { id = "net.lenni0451.template-processor", version = "1.0.1" }
