@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class FileZipper {
 
-    public static File createZipFile(final List<File> files, final IntConsumer progressConsumer) throws IOException {
+    public static File createZipFile(final List<File> files, final IntConsumer progressConsumer) throws IOException, InterruptedException {
         Map<String, File> zipEntries = new HashMap<>();
         for (File file : files) {
             putFile(zipEntries, "", file);
@@ -33,6 +33,8 @@ public class FileZipper {
                 zos.closeEntry();
 
                 progressConsumer.accept(++i * 100 / zipEntries.size());
+
+                if (Thread.interrupted()) throw new InterruptedException();
             }
         }
         return zipFile;
