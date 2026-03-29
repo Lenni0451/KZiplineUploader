@@ -10,13 +10,6 @@ import net.lenni0451.commons.httpclient.model.ContentType;
 import net.lenni0451.kziplineuploader.notification.PlasmaJob;
 import org.json.JSONObject;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.image.RenderedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,10 +19,6 @@ import java.util.List;
 
 @Slf4j
 public class Main {
-
-    private static final DataFlavor TEXT = DataFlavor.stringFlavor;
-    private static final DataFlavor IMAGE = DataFlavor.imageFlavor;
-    private static final DataFlavor FILE = DataFlavor.javaFileListFlavor;
 
     private static HttpClient httpClient;
     private static String ziplineUrl;
@@ -42,29 +31,23 @@ public class Main {
             }
             Thread.sleep(1000); // Have to wait here to make sure the job is initialized
             try {
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                if (clipboard.isDataFlavorAvailable(TEXT)) {
-                    uploadText(clipboard, job);
-                } else if (clipboard.isDataFlavorAvailable(IMAGE)) {
-                    uploadImage(clipboard, job);
-                } else if (clipboard.isDataFlavorAvailable(FILE)) {
-                    uploadFiles(clipboard, job);
-                } else {
-                    job.sendNotification(PlasmaJob.ICON_ERROR, "Unsupported clipboard content", "The clipboard does not contain text, images, or files.");
-                    log.warn("The clipboard contains an unsupported data flavor. Available flavors:");
-                    for (DataFlavor flavor : clipboard.getAvailableDataFlavors()) {
-                        log.info(" - {}", flavor);
-                    }
+                Clipboard.ContentType contentType = Clipboard.getContentType();
+                switch (contentType) {
+                    case TEXT -> uploadText(job);
+                    case IMAGE -> uploadImage(job);
+                    case FILES -> uploadFiles(job);
+                    default -> job.sendNotification(PlasmaJob.ICON_ERROR, "Unsupported clipboard content", "The clipboard does not contain text, images, or files.");
                 }
-            } catch (IOException | UnsupportedFlavorException | ClassCastException e) {
+            } catch (IOException | ClassCastException e) {
                 log.error("Failed to read clipboard", e);
                 job.abort("Failed to read clipboard");
             }
+        } catch (InterruptedException ignored) {
         } catch (Throwable t) {
             log.error("Unhandled exception", t);
         } finally {
             try {
-                Thread.sleep(1000); // Have to wait here to ensure the clipboard is set and the job is finished
+                Thread.sleep(1000); // Have to wait here to ensure the job is finished
             } catch (Throwable ignored) {
             }
         }
@@ -103,22 +86,19 @@ public class Main {
         }
     }
 
-    private static void uploadText(final Clipboard clipboard, final PlasmaJob job) throws IOException, UnsupportedFlavorException {
-        String text = (String) clipboard.getData(TEXT);
+    private static void uploadText(final PlasmaJob job) throws IOException, InterruptedException {
+        String text = Clipboard.readText();
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
         uploadWithProgress(job, "text.txt", bytes.length, new ByteArrayInputStream(bytes), ContentTypes.TEXT_PLAIN);
     }
 
-    private static void uploadImage(final Clipboard clipboard, final PlasmaJob job) throws IOException, UnsupportedFlavorException {
-        Image image = (Image) clipboard.getData(IMAGE);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write((RenderedImage) image, "png", baos);
-        byte[] bytes = baos.toByteArray();
+    private static void uploadImage(final PlasmaJob job) throws IOException, InterruptedException {
+        byte[] bytes = Clipboard.readImage();
         uploadWithProgress(job, "image.png", bytes.length, new ByteArrayInputStream(bytes), ContentTypes.IMAGE_PNG);
     }
 
-    private static void uploadFiles(final Clipboard clipboard, final PlasmaJob job) throws IOException, UnsupportedFlavorException {
-        List<File> files = (List<File>) clipboard.getData(FILE);
+    private static void uploadFiles(final PlasmaJob job) throws IOException, InterruptedException {
+        List<File> files = Clipboard.readFiles();
         if (files.isEmpty()) {
             job.abort("No files to upload");
         } else if (files.size() == 1 && files.getFirst().isFile()) {
@@ -136,7 +116,7 @@ public class Main {
         }
     }
 
-    private static void uploadWithProgress(final PlasmaJob job, final String name, final long size, final InputStream input, final ContentType contentType) {
+    private static void uploadWithProgress(final PlasmaJob job, final String name, final long size, final InputStream input, final ContentType contentType) throws InterruptedException {
         String responseString;
         try {
             job.setPhase("Uploading...");
@@ -151,6 +131,9 @@ public class Main {
                     .execute();
             responseString = response.getContent().getAsString();
         } catch (Throwable t) {
+            if (t.getCause() instanceof InterruptedException) {
+                throw new InterruptedException();
+            }
             log.error("Failed to upload file", t);
             job.abort("Failed to upload file");
             return;
@@ -164,9 +147,14 @@ public class Main {
                 job.abort("Upload failed: " + error);
             } else if (json.has("files") && json.getJSONArray("files").length() == 1 && json.getJSONArray("files").getJSONObject(0).has("url")) {
                 String url = json.getJSONArray("files").getJSONObject(0).getString("url");
-                StringSelection selection = new StringSelection(url);
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-                job.finish();
+                log.info("Uploaded file: {}", url);
+                try {
+                    Clipboard.writeText(url);
+                    job.finish();
+                } catch (Throwable t) {
+                    log.error("Failed to write URL to clipboard", t);
+                    job.sendNotification(PlasmaJob.ICON_WARNING, "Upload successful", "File uploaded successfully but failed to copy URL to clipboard:<br><a href=\"" + url + "\">" + url + "</a>");
+                }
             } else {
                 log.error("Server returned unexpected response: {}", responseString);
                 job.abort("Server returned unexpected response");
