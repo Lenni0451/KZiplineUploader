@@ -97,6 +97,7 @@ public class PlasmaJob implements AutoCloseable {
     public void finish() {
         if (this.cancelled) return;
         this.jobView.terminate("");
+        this.cancelled = true;
     }
 
     /**
@@ -105,9 +106,9 @@ public class PlasmaJob implements AutoCloseable {
      * @param errorMessage A message describing the reason for the abortion (e.g., "Task aborted by user", "Network error occurred")
      */
     public void abort(final String errorMessage) {
-        if (!this.cancelled) {
-            this.jobView.terminate(errorMessage);
-        }
+        if (this.cancelled) return;
+        this.jobView.terminate(errorMessage);
+        this.cancelled = true;
     }
 
     /**
@@ -142,6 +143,9 @@ public class PlasmaJob implements AutoCloseable {
     @Override
     public void close() {
         if (this.connection != null) {
+            if (!this.cancelled) {
+                this.abort("Task aborted");
+            }
             this.connection.disconnect();
         }
     }

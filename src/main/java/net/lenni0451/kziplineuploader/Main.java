@@ -37,7 +37,9 @@ public class Main {
     public static void main(String[] args) {
         Thread mainThread = Thread.currentThread();
         try (PlasmaJob job = new PlasmaJob("Zipline Uploader", PlasmaJob.ICON_INFORMATION, mainThread::interrupt)) {
-            loadConfig(job);
+            if (!loadConfig(job)) {
+                return;
+            }
             Thread.sleep(1000); // Have to wait here to make sure the job is initialized
             try {
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -49,6 +51,10 @@ public class Main {
                     uploadFiles(clipboard, job);
                 } else {
                     job.sendNotification(PlasmaJob.ICON_ERROR, "Unsupported clipboard content", "The clipboard does not contain text, images, or files.");
+                    log.warn("The clipboard contains an unsupported data flavor. Available flavors:");
+                    for (DataFlavor flavor : clipboard.getAvailableDataFlavors()) {
+                        log.info(" - {}", flavor);
+                    }
                 }
             } catch (IOException | UnsupportedFlavorException | ClassCastException e) {
                 log.error("Failed to read clipboard", e);
@@ -56,10 +62,15 @@ public class Main {
             }
         } catch (Throwable t) {
             log.error("Unhandled exception", t);
+        } finally {
+            try {
+                Thread.sleep(1000); // Have to wait here to ensure the clipboard is set and the job is finished
+            } catch (Throwable ignored) {
+            }
         }
     }
 
-    private static void loadConfig(final PlasmaJob job) {
+    private static boolean loadConfig(final PlasmaJob job) {
         try {
             File configFile = new File("config.json");
             if (configFile.exists()) {
@@ -72,6 +83,7 @@ public class Main {
                         .setHeader(HttpHeaders.AUTHORIZATION, token)
                         .setHeader("x-zipline-original-name", String.valueOf(keepFileName));
                 ziplineUrl = url;
+                return true;
             } else {
                 JSONObject config = new JSONObject();
                 config.put("url", "https://example.com");
@@ -82,12 +94,12 @@ public class Main {
                 job.sendNotification(PlasmaJob.ICON_INFORMATION, "Config", "Example config has been created<br>" +
                         "Please edit the config file and restart the uploader.<br>" +
                         configFile.getAbsolutePath());
-                System.exit(0);
+                return false;
             }
         } catch (Throwable t) {
             log.error("Failed to load config", t);
             job.sendNotification(PlasmaJob.ICON_ERROR, "Config", "Failed to load config file");
-            System.exit(1);
+            return false;
         }
     }
 
@@ -155,7 +167,6 @@ public class Main {
                 StringSelection selection = new StringSelection(url);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
                 job.finish();
-                Thread.sleep(1000); // Have to wait here to ensure the clipboard is set and the job is finished
             } else {
                 log.error("Server returned unexpected response: {}", responseString);
                 job.abort("Server returned unexpected response");
