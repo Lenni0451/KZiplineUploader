@@ -1,29 +1,17 @@
-# GradleTemplate
-A template project for my gradle based repos.\
-This readme is only a template. You need to replace all mentions of `GradleTemplate` with the name of your project.\
-Check the [wiki](https://github.com/Lenni0451/GradleTemplate/wiki) for more information on how to setup everything required for this template.
+# KZiplineUploader
+Tool to upload text, images and files to zipline. Shows a KDE Plasma notification with progress and cancel button.
 
 ## Usage
-To use `GradleTemplate` using [Gradle](#gradle)/[Maven](#maven) you can add it as a dependency to your project.\
-The latest version can be found in the [releases](https://github.com/Lenni0451/GradleTemplate/releases).\
-My libraries are hosted on [Maven Central](https://mvnrepository.com/artifact/net.lenni0451/GradleTempalte) or my own [maven server](https://maven.lenni0451.net/).
+You can download the latest release from my [Jenkins server](https://build.lenni0451.net/job/KZiplineUploader/).
 
-### Gradle
-```groovy
-repositories {
-    mavenCentral()
+The application will immediately check the clipboard for text, images or files and upload them to the configured zipline instance.\
+I recommend to set up a global shortcut for the application, so you can easily upload content from the clipboard.
+
+On first start, the application will create a configuration file in the work directory. You should edit this file and set all required values.
+```json
+{
+    "keep_file_name": true,
+    "url": "https://example.com",
+    "token": "your_token_here"
 }
-
-dependencies {
-    implementation "net.lenni0451:GradleTemplate:x.x.x"
-}
-```
-
-### Maven
-```xml
-<dependency>
-  <groupId>net.lenni0451</groupId>
-  <artifactId>GradleTemplate</artifactId>
-  <version>x.x.x</version>
-</dependency>
 ```
