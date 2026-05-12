@@ -5,7 +5,7 @@ dbusJava = "5.2.0"
 findbugs = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
 jetbrainsAnnotations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 lombok = { module = "org.projectlombok:lombok", version = "1.18.44" }
-slf4jSimple = { module = "org.slf4j:slf4j-simple", version = "2.0.17" }
+slf4jSimple = { module = "org.slf4j:slf4j-simple", version = "2.0.18" }
 orgJson = { module = "org.json:json", version = "20251224" }
 
 commons-httpclient = { module = "net.lenni0451.commons:httpclient", version = "1.9.2" }
