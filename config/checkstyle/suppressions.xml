@@ -4,5 +4,6 @@
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-    <suppress files="TheClassToIgnore\.java" checks="[a-zA-Z0-9]*"/>
+    <suppress files="JobViewV2\.java" checks="TypeName"/>
+    <suppress files="Notifications\.java" checks="MethodName"/>
 </suppressions>

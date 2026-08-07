@@ -74,9 +74,9 @@ public class Main {
                 config.put("token", "your_token_here");
                 Files.writeString(configFile.toPath(), config.toString(4), StandardCharsets.UTF_8);
                 log.info("Created config file: {}", configFile.getAbsoluteFile());
-                job.sendNotification(PlasmaJob.ICON_INFORMATION, "Config", "Example config has been created<br>" +
-                        "Please edit the config file and restart the uploader.<br>" +
-                        configFile.getAbsolutePath());
+                job.sendNotification(PlasmaJob.ICON_INFORMATION, "Config", "Example config has been created<br>"
+                        + "Please edit the config file and restart the uploader.<br>"
+                        + configFile.getAbsolutePath());
                 return false;
             }
         } catch (Throwable t) {
