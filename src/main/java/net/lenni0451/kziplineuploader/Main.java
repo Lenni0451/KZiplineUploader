@@ -64,7 +64,8 @@ public class Main {
                 httpClient = new HttpClient()
                         .setHeader(HttpHeaders.USER_AGENT, "KZiplineUploader/1.0")
                         .setHeader(HttpHeaders.AUTHORIZATION, token)
-                        .setHeader("x-zipline-original-name", String.valueOf(keepFileName));
+                        .setHeader("x-zipline-original-name", String.valueOf(keepFileName))
+                        .setReadTimeout(Integer.MAX_VALUE);
                 ziplineUrl = url;
                 return true;
             } else {
