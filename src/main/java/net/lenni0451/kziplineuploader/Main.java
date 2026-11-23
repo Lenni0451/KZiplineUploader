@@ -31,10 +31,11 @@ public class Main {
             }
             Thread.sleep(1000); // Have to wait here to make sure the job is initialized
             try {
-                Clipboard.ContentType contentType = Clipboard.getContentType();
-                switch (contentType) {
-                    case TEXT -> uploadText(job);
-                    case IMAGE -> uploadImage(job);
+                Clipboard.Content content = Clipboard.detect();
+                log.info("Detected clipboard content {} ({})", content.type(), content.mimeType());
+                switch (content.type()) {
+                    case TEXT -> uploadText(job, content);
+                    case IMAGE -> uploadImage(job, content);
                     case FILES -> uploadFiles(job);
                     default -> job.sendNotification(PlasmaJob.ICON_ERROR, "Unsupported clipboard content", "The clipboard does not contain text, images, or files.");
                 }
@@ -87,15 +88,15 @@ public class Main {
         }
     }
 
-    private static void uploadText(final PlasmaJob job) throws IOException, InterruptedException {
-        String text = Clipboard.readText();
+    private static void uploadText(final PlasmaJob job, final Clipboard.Content content) throws IOException, InterruptedException {
+        String text = Clipboard.readText(content.mimeType());
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
         uploadWithProgress(job, "text.txt", bytes.length, new ByteArrayInputStream(bytes), ContentTypes.TEXT_PLAIN);
     }
 
-    private static void uploadImage(final PlasmaJob job) throws IOException, InterruptedException {
-        byte[] bytes = Clipboard.readImage();
-        uploadWithProgress(job, "image.png", bytes.length, new ByteArrayInputStream(bytes), ContentTypes.IMAGE_PNG);
+    private static void uploadImage(final PlasmaJob job, final Clipboard.Content content) throws IOException, InterruptedException {
+        byte[] bytes = Clipboard.readImage(content.mimeType());
+        uploadWithProgress(job, "image." + content.imageExtension(), bytes.length, new ByteArrayInputStream(bytes), ContentType.parse(content.baseMimeType()));
     }
 
     private static void uploadFiles(final PlasmaJob job) throws IOException, InterruptedException {
